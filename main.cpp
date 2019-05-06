@@ -4,6 +4,7 @@
 #include "tmatrix.h"
 #include "integrator.h"
 #include "custom.h"
+#include "consumer.h"
 #include <fstream>
 #include "stdlib.h"
 #include "iomanip"
@@ -11,11 +12,25 @@
 
 using namespace std;
 
-void calcModel(TModel* model, int i);
-TMatrix get_transition_matrix(long double latitude, long double longtitude, bool flag);
+void calcModel(TModel* model, Consumer* chronometr, int i);
 
 int main()
 {
+    long double latitude{0.0L}, longtitude{0.0L};
+    long double betta_0{0.0L}, betta_1{0.0L}, frequency{0.0L};
+    std::cout<<"Input Consumer coordinates: "<<std::endl;
+        std::cout<< "Consumer latitude: ";
+        std::cin >> latitude;
+        std::cout<< "Consumer longtitude: ";
+        std::cin >> longtitude;
+    std::cout<<"Input time scale parametrs: "<<std::endl;
+        std::cout<< "Betta_0: ";
+        std::cin >> betta_0;
+        std::cout<< "Betta_1: ";
+        std::cin >> betta_1;
+        std::cout<< "Frequency: ";
+        std::cin >> frequency;
+    Consumer *chronometr = new Consumer(latitude, longtitude, frequency, betta_0, betta_1);
     int satelliteNum = 27;
     //создаем 27 объектов "спутник", каждый из которых является моделью
     TModel* model[satelliteNum];
@@ -23,15 +38,15 @@ int main()
     {
         if ( (i >= 0) && (i < 9) )
         {
-            model[i] = new TSatellite(i, 0.785398L*i, 0.0L, 0.977384L );
+            model[i] = new TSatellite(i, 0.785398L*i, 0.0L, 0.977384L);
         }
         if ( (i >= 9) && (i < 18) )
         {
-            model[i] = new TSatellite(i, 0.785398L*i, 2.0944L, 0.977384L );
+            model[i] = new TSatellite(i, (0.785398L- 0.226893L)*(i-9), 2.0944L, 0.977384L);
         }
         if ( (i >= 18) && (i < 27) )
         {
-            model[i] = new TSatellite(i, 0.785398L*i, 2.0944L*2.0L, 0.977384L );
+            model[i] = new TSatellite(i, (0.785398L+ 0.226893L)*(i-18) , 2.0944L*2.0L, 0.977384L);
         }
     }
     TIntegrator* Integrator = new TDormandPrinceIntegrator();
@@ -40,18 +55,13 @@ int main()
     for(int i = 0 ; i < satelliteNum; ++i)
     {
         Integrator->Run(model[i]);
-        calcModel(model[i], i);
+        calcModel(model[i], chronometr, i);
     }
-    for(int i = 0 ; i < satelliteNum; ++i)
-    {
-         //delete[] model[i];
-    }
-    //delete[] model;
     Integrator->~TIntegrator();
     return 0;
 }
 
-void calcModel(TModel* model, int i)
+void calcModel(TModel* model, Consumer* chronometr, int i)
 {
     std::ofstream file("Integration_results_" + std::to_string(i)+ ".txt");
         TMatrix Result = model->getResult();
@@ -63,42 +73,11 @@ void calcModel(TModel* model, int i)
                 file<<fixed;
                 file << Result[i][j] << " ";
                 cout<<fixed;
-                //cout<<Result(i, j) << " ";
             }
             file << std::endl;
-            //cout<<std::endl;
         }
 
         file.close();
+        chronometr->navigation(model->getResult(), i);
 }
-TMatrix get_transition_matrix(long double latitude, long double longtitude, bool flag)
-{
-    if (flag)
-    {
-        TMatrix R(3,3);
-        R[0][0] = - sin(latitude) * cos(longtitude);
-        R[0][1] = - sin(latitude) * sin(longtitude);
-        R[0][2] =   cos(latitude);
-        R[1][0] =   cos(latitude) * cos(longtitude);
-        R[1][1] =   cos(latitude) * sin(longtitude);
-        R[1][2] = - sin(latitude);
-        R[2][0] = - sin(longtitude);
-        R[2][1] =   cos(longtitude);
-        R[2][2] =   0;
-        return R;
-    }
-    if(!flag)
-    {
-        TMatrix R(3,3);
-        R[0][0] = -sin(longtitude);
-        R[0][1] = cos(longtitude);
-        R[0][2] = 0;
-        R[1][0] = -sin(latitude)*cos(longtitude);
-        R[1][1] = -sin(latitude)*sin(longtitude);
-        R[1][2] = cos(latitude);
-        R[2][0] = cos(latitude)*cos(longtitude);
-        R[2][1] = cos(latitude)*sin(longtitude);
-        R[2][2] = sin(latitude);
-        return R;
-    }
-}
+

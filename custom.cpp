@@ -4,6 +4,7 @@
 #include <iostream>
 #include "custom.h"
 //#include "LA.h"
+
 /*#include "tvector.h"
 #include "tmatrix.h"*/
 #include "iomanip"
@@ -196,7 +197,7 @@ long double TSatellite::do_thing(const TVector &X, long double t)
         //cout<<_generator.white_noise_generator()<<endl;
         distance = sqrt(pow((X[0] - chronometr_vector[0]), 2.0L) +
                 pow((X[1] - chronometr_vector[1]),2.0L) +
-                pow((X[2] - chronometr_vector[2]),2.0L)) + (2.0L+0.01L*t)*1.1L + _generator.white_noise_generator();
+                pow((X[2] - chronometr_vector[2]),2.0L)) + (2.0L+0.01L*t)*1.1L + _generator.white_noise_generator(0.0L, 10.0L);
     }
     else
     {

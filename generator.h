@@ -19,7 +19,7 @@ public:
     long double t_corr;
     const long double w = 1000;
     long double get_nu(long double time);
-    long double white_noise_generator();
+    long double white_noise_generator(long double m, long double d);
     long double nu_0 = 0;
     long double time_temp = 0;
     int temp = 0;

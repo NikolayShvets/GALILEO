@@ -12,7 +12,7 @@ class TModel
         TMatrix Result;
 		int N;
     public:
-        TModel() : SamplingIncrement(60.), t0( 0. ), t1( 43200. ), N( 0. ) {}
+        TModel() : SamplingIncrement(0.1), t0( 0. ), t1( 43200. ), N( 0. ) {}
 
 		virtual void getRight( const TVector& X, long double t, TVector& Y ) = 0;
 		

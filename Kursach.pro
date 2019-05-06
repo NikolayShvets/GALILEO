@@ -9,7 +9,8 @@ SOURCES += main.cpp \
     model.cpp \
     generator.cpp \
     tmatrix.cpp \
-    tvector.cpp
+    tvector.cpp \
+    consumer.cpp
 
 HEADERS += \
     custom.h \
@@ -17,4 +18,5 @@ HEADERS += \
     model.h \
     generator.h \
     tmatrix.h \
-    tvector.h
+    tvector.h \
+    consumer.h

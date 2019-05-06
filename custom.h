@@ -1,5 +1,4 @@
 #pragma once//---------------------------------------------------------------------------
-
 #include "model.h"
 #include <tuple>
 #include <math.h>

@@ -30,12 +30,11 @@ long double generator::get_nu(long double time)
     long double res = stold(nu_time[number]);
     return res;
 }
-long double generator::white_noise_generator()
+long double generator::white_noise_generator(long double m, long double d)
 {
-    long double D = 1/t_corr;
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     default_random_engine generator(seed);
-    normal_distribution<long double> distribution(0.0L, 10.0L);
+    normal_distribution<long double> distribution(m, d);
     nu_0 = distribution(generator);//*pow(D, 0.5);
     return nu_0;
 }
