@@ -10,7 +10,8 @@ SOURCES += main.cpp \
     generator.cpp \
     tmatrix.cpp \
     tvector.cpp \
-    consumer.cpp
+    consumer.cpp \
+    mnk.cpp
 
 HEADERS += \
     custom.h \
@@ -19,4 +20,5 @@ HEADERS += \
     generator.h \
     tmatrix.h \
     tvector.h \
-    consumer.h
+    consumer.h \
+    mnk.h

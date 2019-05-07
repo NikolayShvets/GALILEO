@@ -12,12 +12,12 @@
 
 using namespace std;
 
-void calcModel(TModel* model, Consumer* chronometr, int i);
+void calcModel(TModel* model, /*Consumer* chronometr,*/ int i);
 
 int main()
 {
     long double latitude{0.0L}, longtitude{0.0L};
-    long double betta_0{0.0L}, betta_1{0.0L}, frequency{0.0L};
+    long double betta_0{0.0L}, betta_1{0.0L}, measurement_period{0.0L};
     std::cout<<"Input Consumer coordinates: "<<std::endl;
         std::cout<< "Consumer latitude: ";
         std::cin >> latitude;
@@ -28,10 +28,12 @@ int main()
         std::cin >> betta_0;
         std::cout<< "Betta_1: ";
         std::cin >> betta_1;
-        std::cout<< "Frequency: ";
-        std::cin >> frequency;
-    Consumer *chronometr = new Consumer(latitude, longtitude, frequency, betta_0, betta_1);
+        std::cout<< "Measurement period: ";
+        std::cin >> measurement_period;
+    Consumer *chronometr = new Consumer(latitude, longtitude, measurement_period, betta_0, betta_1);
     int satelliteNum = 27;
+    vector<TMatrix> finish_modeling;
+
     //создаем 27 объектов "спутник", каждый из которых является моделью
     TModel* model[satelliteNum];
     for(int i = 0; i < satelliteNum; ++i)
@@ -54,14 +56,24 @@ int main()
     //поочередно для каждого спутника вызываем интегратор
     for(int i = 0 ; i < satelliteNum; ++i)
     {
+        //этап 1 моделирование
         Integrator->Run(model[i]);
-        calcModel(model[i], chronometr, i);
+        finish_modeling.push_back(model[i]->getResult());
+        calcModel(model[i], i);
     }
     Integrator->~TIntegrator();
+    //этап 2 подготовка к МНК
+    chronometr->navigation(finish_modeling, false); //дальности по результатам моделирования
+    //этап 3 начало МНК
+    chronometr->set_lat(chronometr->get_lat()+chronometr->get_delta());
+    chronometr->set_lon(chronometr->get_lon()+chronometr->get_delta());
+    chronometr->set_betta_0(chronometr->get_betta_0()+chronometr->get_delta());
+    chronometr->set_betta_1(chronometr->get_betta_1()+chronometr->get_delta()*0.001L);
+    chronometr->navigation(finish_modeling, true);
     return 0;
 }
 
-void calcModel(TModel* model, Consumer* chronometr, int i)
+void calcModel(TModel* model, int i)
 {
     std::ofstream file("Integration_results_" + std::to_string(i)+ ".txt");
         TMatrix Result = model->getResult();
@@ -78,6 +90,6 @@ void calcModel(TModel* model, Consumer* chronometr, int i)
         }
 
         file.close();
-        chronometr->navigation(model->getResult(), i);
+        //chronometr->navigation(model->getResult(), i);
 }
 

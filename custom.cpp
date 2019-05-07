@@ -117,45 +117,6 @@ TSatellite::TSatellite(int satellite_number,long double d_u, long double d_omega
     cout<< "    Vy: "<<X0[4]<<" m/sec"<<endl;
     cout<< "    Vz: "<<X0[5]<<" m/sec"<<endl;
     cout<< "    |v-vector| = "<<sqrt(pow(X0[3],2.) + pow(X0[4], 2.) + pow(X0[5], 2.))<<endl;
-    /*this->latitude = latitude;
-    this->longtitude = longtitude;
-    //координаты
-    this->X0.resize(3);
-    X0[0] = this->latitude; //0
-    X0[1] = this->longtitude; //0
-    X0[2] = Re+Rorb;
-    cout<<"Satellite namber "<<satellite_number<<endl;
-    cout<<fixed;
-    cout<<"geocenter: "<<endl;
-    cout<<"fi: "<<X0[0]<<endl;
-    cout<<"lambda: "<<X0[1]<<endl;
-    cout<<"H: "<<X0[2]<<endl;
-    //переход от геоцентрических координат к топоцентрическим
-
-    X0[0] = (Re+Rorb)*cos(latitude)*sin(longtitude);
-    X0[1] = (Re+Rorb)*cos(latitude)*cos(longtitude);
-    X0[2] = (Re+Rorb)*sin(latitude);
-    X0.resize(6);
-    //скорость у и z поменялись местами
-    X0[3] = 3677.233*cos(latitude)*cos(longtitude);//0.0L;
-    X0[4] = 3677.233*cos(latitude)*sin(longtitude);//3677.233*cos(latitude);
-    X0[5] = -3677.233*sin(latitude);//-3677.233*sin(latitude);
-
-
-    cout<<fixed;
-    cout<<"topocentr: "<<endl;
-    cout<<"X0: "<<X0[0]<<endl;
-    cout<<"Y0: "<<X0[1]<<endl;
-    cout<<"Z0: "<<X0[2]<<endl;
-    cout<<"VX0: "<<X0[3]<<endl;
-    cout<<"VY0: "<<X0[4]<<endl;
-    cout<<"VZ0: "<<X0[5]<<endl;
-    cout<<"speed: "<<endl;
-    cout<<"|V| = "<<sqrt(pow(X0[3],2.) + pow(X0[4],2.) + pow(X0[5],2.))<<endl;
-    cout<<"|R| = "<<sqrt(pow(X0[0],2.) + pow(X0[1],2.) + pow(X0[2],2.))<<endl;
-    cout<<"************************"<<endl;
-
-    //скорости*/
 }
 //---------------------------------------------------------------------------
 
