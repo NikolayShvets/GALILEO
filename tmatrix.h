@@ -2,6 +2,7 @@
 #define TMATRIX_H
 #include <tvector.h>
 
+
 class TMatrix
 {
 protected:
@@ -34,6 +35,8 @@ public:
     //умножение матрицы на вектор
     TVector operator * (const TVector& rval) const;
     ~TMatrix();
+    void clear();
+    void show_matrix();
 };
 
 #endif // TMATRIX_H

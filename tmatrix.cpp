@@ -14,6 +14,18 @@ TMatrix::TMatrix(const TMatrix &rval)
     this->data.assign(rval.data.begin(), rval.data.end());
 }
 
+void TMatrix::show_matrix()
+{
+    for(int i = 0; i < this->row_count(); ++i)
+    {
+        for(int j = 0; j < this->col_count(); ++j)
+        {
+            std::cout<<this->data[i][j]<<"\t";
+        }
+        std::cout<<std::endl;
+    }
+}
+
 void TMatrix::resize(int n, int m)
 {
     this->n = n; this->m = m;
@@ -91,4 +103,8 @@ TVector TMatrix::operator * (const TVector& rval) const
 TMatrix::~TMatrix()
 {
     this->data.erase(this->data.begin(), this->data.end());
+}
+void TMatrix::clear()
+{
+    this->data.clear();
 }

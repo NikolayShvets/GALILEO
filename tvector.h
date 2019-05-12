@@ -2,6 +2,8 @@
 #define VECTOR_ALG_H
 #include <vector>
 #include <cmath>
+#include <iostream>
+
 using namespace std;
 class TMatrix;
 class TVector
