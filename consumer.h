@@ -10,27 +10,43 @@ class Consumer
 protected:
     vector<ofstream> navigation_log_vector;
     long double latitude{0.0L}, longtitude{0.0L}, step{1.0L};
-    long double light_speed{299792458.0L/*0.0L*/}, betta_0{0.0L}, betta_1{0.0L};
+    long double light_speed{299792458.0L}, betta_0{0.0L}, betta_1{0.0L};
     long double measurement_period{0.0L};
     int measure_number{0};
-    long double eps{1e-10};
-    long double delta{1e-6};
+    long double eps{1e-3};
+    long double delta{1e-8};
+    long double m{0.0L}, d{0.0L};
 public:
+    TVector measure_vector;
     int current_s_num{0}, k{-1}, s{0};
+    TVector delta_x;
+    TVector delta_y;
+    TMatrix true_distances; //один раз, рассчетные
+    TMatrix init_distances; //каждый шаг, реальные наперед известные
+    TVector delta_true_distances;
+    TVector H_plus_eps;
+    TVector H_minus_eps;
     TMatrix D;
-    vector<TMatrix> derivatives;
-    TMatrix true_distances;
+    TMatrix derivatives;
+    TVector distances;
     long double distance{0.0L};
     generator _generator;
     bool visibility{false};
     long double Re{6371000.0L}, omega{7.292115E-5};
     TVector consumer_vector;
-    Consumer(long double latitude, long double longtitude,long double measurement_period, long double betta_0, long double betta_1);
+    Consumer(long double latitude, long double longtitude,long double measurement_period, long double betta_0, long double betta_1, long double m, long double d);
     ~Consumer();
-    void navigation(std::vector<TMatrix> finish_modeling, bool flag);
+    void navigation(std::vector<TMatrix> finish_modeling, bool init_dist, bool w_err, bool d_and_der);
 
     long double get_lat () {return latitude;}
     void set_lat(long double latitude) {this->latitude = latitude;}
+
+    long double get_m () {return m;}
+    void set_m(long double m) {this->m = m;}
+
+
+    long double get_d () {return d;}
+    void set_d(long double d) {this->d = d;}
 
     long double get_lon() {return longtitude;}
     void set_lon(long double longtitude) {this->longtitude = longtitude;}
@@ -47,7 +63,7 @@ public:
     long double get_measure_number() {return measure_number;}
     void set_measure_number(long double measure_number) {this->measure_number = measure_number;}
 
-    void get_derivatives(TVector X_navigation_spacecraft, long double t, int measure_number, int satellite_number);
+    void get_derivatives(TVector X_navigation_spacecraft, long double t, long double curr_lon, int measure_number);
 };
 
 #endif // CONSUMER_H
