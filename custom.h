@@ -6,6 +6,7 @@
 #include <fstream>
 #include "generator.h"
 using namespace std;
+using namespace arma;
 //---------------------------------------------------------------------------
 
 class TArenstorfModel  : public TModel
@@ -15,7 +16,7 @@ class TArenstorfModel  : public TModel
         long double D1, D2;
     public:
         TArenstorfModel(  );
-        void getRight( const TVector& X, long double t, TVector& Y );
+        void getRight( const vec& X, long double t, vec& Y );
 };
 
 class TSatellite  : public TModel
@@ -34,17 +35,16 @@ protected:
     long double eccentricity{0.1L};//безразмерная (доли единицы)
     long double u{M_PI/*0.174533L*/};//аргумент широты (рад)
     long double omega{3.0L*M_PI/2.0L/*3.75246L*/};//долгота восходящего узла (рад)
-    TVector X_oscul;//вектор положения в оскулирующих элементах
-    TVector V_oscul;//вектор скоростей в оскулирующих элементах
+    vec X_oscul;//вектор положения в оскулирующих элементах
+    vec V_oscul;//вектор скоростей в оскулирующих элементах
     //матрицы перехода
-    TMatrix A; //матрица перехода между подвижной орбитальной СК к инерц геоцентр СК
+    mat A; //матрица перехода между подвижной орбитальной СК к инерц геоцентр СК
     //файл с дистанциями
 public:
-    TMatrix R;
+    mat R;
     long double ch_lat, ch_lon;
     TSatellite(int satellite_number, long double d_u, long double d_omega, long double i);//по номеру спуткника (кратность 9) задаем одну из трех орбит, широту
-    void getRight(const TVector& X, long double t, TVector& Y);
-    long double do_thing(const TVector &X, long double t);
+    void getRight(const vec& X, long double t, vec& Y);
 };
 
 

@@ -47,7 +47,7 @@ long double TDormandPrinceIntegrator::Run(TModel* Model)
 				h_new = Model->getSamplingIncrement(),
 			    e = 0;
 
-    TVector
+    vec
             X = Model->getInitialConditions(),
             X1( X.size() ),
             X2( X.size() ),
@@ -111,13 +111,6 @@ long double TDormandPrinceIntegrator::Run(TModel* Model)
             Model->addResult( Xout, t_out );
             t_out += Model->getSamplingIncrement();
         }
-       // std::ofstream file;
-       // file.open("/home/nikonikoni/QtProjects/build-Kursach-Desktop-Debug/dist_file_"+
-                           //std::to_string(num)+".txt", ios_base::app);
-        //Model->consumer->navigation(X, t, Model->getT0(), num, true);
-      //  file << fixed;
-        //file << t <<" "<< Model->do_thing(X, t)<<std::endl;
-       // file.close();
         X = X1;
         t += h;
         N++;

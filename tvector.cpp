@@ -5,6 +5,10 @@ TVector::TVector(int n) : n{0}
 {
     resize(n);
 }
+void TVector::vector_clear()
+{
+    this->data.clear();
+}
 TVector::TVector(const TVector& rval) : n{0}
 {
     this->data.assign(rval.data.begin(), rval.data.end());
@@ -14,6 +18,15 @@ TVector& TVector::operator = (const TVector& rval)
     this->data = rval.data;
     return *this;
 }
+
+void TVector::show_vector()
+{
+    for(int i = 0; i < this->data.size(); ++i)
+    {
+            std::cout<<this->data[i]<<std::endl;
+    }
+}
+
 TVector::~TVector()
 {
     this->data.erase(this->data.begin(), this->data.end());

@@ -2,6 +2,8 @@
 #define VECTOR_ALG_H
 #include <vector>
 #include <cmath>
+#include <iostream>
+
 using namespace std;
 class TMatrix;
 class TVector
@@ -21,6 +23,7 @@ public:
     //изменение размера вектора
     void resize(int n);
     //получение элемента
+    int row_count(){return this->data.size();}
     inline long double operator[](int i) const {return data[i];}
     inline long double& operator[](int i) {return data[i];}
     //присвоение вектору
@@ -38,6 +41,8 @@ public:
     TVector operator * (const long double rval) const;
     //скалярное умножение векторов
     long double operator * (const TVector& rval) const;
+    void show_vector();
+    void vector_clear();
     ~TVector();
 };
 

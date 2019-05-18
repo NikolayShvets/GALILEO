@@ -1,8 +1,10 @@
 #pragma once
 #include "tvector.h"
 #include "tmatrix.h"
+#include <armadillo>
 #include <fstream>
 using namespace std;
+using namespace arma;
 //-------------------------------------------Z--------------------------------
 class TModel;
 
@@ -24,7 +26,7 @@ class TDormandPrinceIntegrator : public TIntegrator
 {
     private:
         static const long double c[7], a[7][6], b1[7], b2[7];
-        TVector K[7];
+        vec K[7];
 		long double u;
     public:
         TDormandPrinceIntegrator();

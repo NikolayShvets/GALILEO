@@ -1,5 +1,5 @@
 #include <iostream>
-//#include "LA.h"
+//#include
 #include "tvector.h"
 #include "tmatrix.h"
 #include "integrator.h"
@@ -11,13 +11,21 @@
 #include "math.h"
 
 using namespace std;
+using namespace arma;
 
 void calcModel(TModel* model, /*Consumer* chronometr,*/ int i);
 
 int main()
 {
-    long double latitude{0.0L}, longtitude{0.0L};
-    long double betta_0{0.0L}, betta_1{0.0L}, measurement_period{0.0L};
+    std::ofstream init_distances_file("init_dist.txt");
+    std::ofstream true_distances_file("true_dist.txt");
+    std::ofstream der_file("der.txt");
+    std::ofstream D_file("D.txt");
+    std::ofstream mnk_file("mnk_file.txt");
+    std::ofstream deltas("deltas_file.txt");
+
+    long double latitude{0.0L}, longtitude{0.0L}, betta_0{0.0L}, betta_1{0.0L}, measurement_period{0.0L}, m{0.0L}, d{0.0L};
+
     std::cout<<"Input Consumer coordinates: "<<std::endl;
         std::cout<< "Consumer latitude: ";
         std::cin >> latitude;
@@ -30,12 +38,25 @@ int main()
         std::cin >> betta_1;
         std::cout<< "Measurement period: ";
         std::cin >> measurement_period;
-    Consumer *chronometr = new Consumer(latitude, longtitude, measurement_period, betta_0, betta_1);
+    std::cout<<"Input statistic: "<<std::endl;
+        std::cout<< "M: ";
+        std::cin >> m;
+        std::cout<< "D: ";
+        std::cin >> d;
+
+    //объект потребителя
+    Consumer *chronometr = new Consumer(latitude, longtitude, measurement_period, betta_0, betta_1, m, d);
+
+    //количество спутников
     int satelliteNum = 27;
-    vector<TMatrix> finish_modeling;
+
+    //блочная матрица результатов интегрирования каждого спутника
+    vector<mat> finish_modeling;
 
     //создаем 27 объектов "спутник", каждый из которых является моделью
     TModel* model[satelliteNum];
+
+    //инициализируем каждый спутник
     for(int i = 0; i < satelliteNum; ++i)
     {
         if ( (i >= 0) && (i < 9) )
@@ -51,45 +72,159 @@ int main()
             model[i] = new TSatellite(i, (0.785398L+ 0.226893L)*(i-18) , 2.0944L*2.0L, 0.977384L);
         }
     }
+
     TIntegrator* Integrator = new TDormandPrinceIntegrator();
     Integrator->setPrecision(1E-16);
-    //поочередно для каждого спутника вызываем интегратор
+
+    //поочередно для каждого спутника вызываем интегратор --> истиная траектория движения
+    //каждого спутника в каждый момент времени
     for(int i = 0 ; i < satelliteNum; ++i)
     {
-        //этап 1 моделирование
         Integrator->Run(model[i]);
         finish_modeling.push_back(model[i]->getResult());
         calcModel(model[i], i);
     }
     Integrator->~TIntegrator();
-    //этап 2 подготовка к МНК
-    chronometr->navigation(finish_modeling, false); //дальности по результатам моделирования
-    //этап 3 начало МНК
-    chronometr->set_lat(chronometr->get_lat()+chronometr->get_delta());
-    chronometr->set_lon(chronometr->get_lon()+chronometr->get_delta());
-    chronometr->set_betta_0(chronometr->get_betta_0()+chronometr->get_delta());
-    chronometr->set_betta_1(chronometr->get_betta_1()+chronometr->get_delta()*0.001L);
+
+    //далее МНК
+
+    //единожды получаем истинные результаты c ошибкой на каждый момент времени
+    //--> вектор истиных дальностей
+    //с шагом 1с реальные дальности всех спутников с ошибкой, с проверкой на видимость
+
     chronometr->navigation(finish_modeling, true);
+  //  chronometr->distances.clear();
+  /*  for (int i = 0; i <chronometr->init_distances.n_rows; ++i)
+    {
+        init_distances_file<<std::fixed;
+        init_distances_file<<chronometr->init_distances(i,2)<<std::endl;
+    }*/
+    init_distances_file << chronometr->init_distances << std::endl; init_distances_file.flush();
+
+    //инициализируем вектор поправок delta_x
+    chronometr->delta_x.resize(5);
+    for(int i = 0; i < chronometr->delta_x.n_rows; ++i)
+        chronometr->delta_x[i] = 1.0L;
+
+    //инициализируем вектор ну(оцениваемые параметры) на 0 шаг мнк (забиваем нулями)
+    chronometr->measure_vector.resize(5);
+    double deltas_arr[] = {1e-2, 1e-2, 6391000.0L, 1e-3, 1e-9};
+    for(int i = 0; i < chronometr->measure_vector.n_rows; ++i)
+    {
+        //if(i==2)
+        //    chronometr->measure_vector[i] = chronometr->Re;
+        chronometr->measure_vector[i] = deltas_arr[i];
+    }
+
+    //счетчик итераций МНК
+    int counter{0};
+
+    //пока каждая из координат вектора оцениваемых параметров не меньше чем епсилон пробегаем МНК
+    while(
+          (  abs(chronometr->delta_x[0]) > chronometr->get_eps())
+          ||(abs(chronometr->delta_x[1]) > chronometr->get_eps())
+          ||(abs(chronometr->delta_x[2]) > chronometr->get_eps())
+          ||(abs(chronometr->delta_x[3]) > chronometr->get_eps())
+          ||(abs(chronometr->delta_x[4]) > chronometr->get_eps())
+          )
+    {
+        ++counter;
+        std::cout<<"Iteration "<<counter<<": "<<std::endl;
+        //на каждый момент времени для каждого спутника в области видимости
+        //для каждой истинной дальности в этот момент времени, рассчитываем
+        //расчетную дальность без ошибки
+        //с шагом 150с расчетные дальности c ошибкой всех спутников в области видимости
+
+        chronometr->navigation(finish_modeling, false);
+        /*for (int i = 0; i <chronometr->true_distances.n_rows; ++i)
+        {
+            true_distances_file<<std::fixed;
+            true_distances_file<<chronometr->true_distances(i,2)<<std::endl;
+        }*/
+        true_distances_file << chronometr->true_distances << std::endl; true_distances_file.flush();
+
+        for (int i = 0; i <chronometr->derivatives.n_rows; ++i)
+        {
+            for(int j = 0; j < chronometr->derivatives.n_cols; ++j)
+            {
+                der_file<<std::fixed;
+                der_file<<chronometr->derivatives(i,j)<<"   ";
+            }
+            der_file<<std::endl;
+        }
+
+        //формируем разности между реальными дальностями и расчетными по моментам времени расчетных дальностей
+        chronometr->delta_y.resize(chronometr->get_measure_number());
+        for(int i = 0; i < chronometr->get_measure_number(); ++i)
+        {
+            chronometr->delta_y[i] = chronometr->init_distances(i,2) - chronometr->true_distances(i,2);
+        }
+
+        // D - диагональная матрица дисперсий ошибок этта
+        chronometr->D.resize(chronometr->get_measure_number(),chronometr->get_measure_number());
+        chronometr->D = chronometr->D.eye();
+        chronometr->D = chronometr->D * powl(chronometr->get_d(),2.0L);
+
+        for (int i = 0; i <chronometr->D.n_rows; ++i)
+        {
+            for(int j = 0; j < chronometr->D.n_cols; ++j)
+            {
+                D_file<<std::fixed;
+                D_file<<chronometr->D(i,j)<<"   ";
+            }
+            D_file<<std::endl;
+        }
+        //вычисляем поправки к вектору начальных условий (p,l,h,b0,b1)T; delta_x = (Ht*!D*H)^(-1)*Ht*D^(-1)*delta_y
+       // TMatrix temp_test(5,5),test(5,5), _test(5,5); //вспомогательная матрица
+        //(Ht*!D*H)^(-1)
+
+        std::cout << (chronometr->derivatives.t()*chronometr->D.i()*chronometr->derivatives).i() << std::endl;
+        chronometr->delta_x = (chronometr->derivatives.t()*chronometr->D.i()*chronometr->derivatives).i()*chronometr->derivatives.t()*chronometr->D.i()*chronometr->delta_y;
+
+        std::cout<<std::fixed;
+        std::cout<<"delta_x: "<<std::endl;
+        std::cout<<chronometr->delta_x<<std::endl;
+        std::cout<<chronometr->delta_x.n_rows<<"x"<<"1"<<std::endl;
+
+        chronometr->measure_vector = chronometr->measure_vector + chronometr->delta_x;
+        std::cout<<"measure_vector: "<<std::endl;
+        std::cout<<chronometr->measure_vector<<std::endl;
+
+        mnk_file<<std::fixed;
+        for(int i = 0; i < chronometr->measure_vector.n_rows; ++i)
+            mnk_file<<chronometr->measure_vector[i]<<" ";
+        mnk_file<<std::endl;
+
+        deltas<<std::fixed;
+        for(int i = 0; i < chronometr->delta_x.n_rows; ++i)
+                deltas<<chronometr->delta_x[i]<<" ";
+        deltas<<std::endl;
+        mnk_file.flush();
+        deltas.flush();
+    }
+
+    mnk_file.close();
+    init_distances_file.close();
+    true_distances_file.close();
     return 0;
 }
 
 void calcModel(TModel* model, int i)
 {
     std::ofstream file("Integration_results_" + std::to_string(i)+ ".txt");
-        TMatrix Result = model->getResult();
+        mat Result = model->getResult();
 
-        for (int i=0; i<Result.row_count(); i++)
+        for (int i=0; i<Result.n_rows; i++)
         {
-            for (int j=0; j<Result.col_count(); j++)
+            for (int j=0; j<Result.n_cols; j++)
             {
                 file<<fixed;
-                file << Result[i][j] << " ";
+                file << Result(i,j) << " ";
                 cout<<fixed;
             }
             file << std::endl;
         }
 
         file.close();
-        //chronometr->navigation(model->getResult(), i);
 }
 
