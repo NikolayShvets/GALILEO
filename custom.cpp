@@ -27,7 +27,7 @@ TArenstorfModel::TArenstorfModel() : TModel()
 
 //---------------------------------------------------------------------------
 
-void TArenstorfModel::getRight( const TVector& X, long double t, TVector& Y )
+void TArenstorfModel::getRight( const vec& X, long double t, vec& Y )
 {
     Y.resize(4);
     D1 = powl( powl( X[0] + m, 2 ) + powl( X[1], 2 ), 1.5 );
@@ -50,14 +50,14 @@ TSatellite::TSatellite(int satellite_number,long double d_u, long double d_omega
     this->i = i;
     this->omega += d_omega;
     this->A.resize(3,3);
-    this->A[0][0] = cosl(u)*cosl(omega) - sinl(u)*sinl(omega)*cosl(i); this->A[0][1] = -sinl(u)*cosl(omega) - cosl(u)*sinl(omega)*cosl(i); this->A[0][2] = sinl(i)*sinl(omega);
-    this->A[1][0] = cosl(u)*sinl(omega) + sinl(u)*cosl(omega)*cosl(i); this->A[1][1] = -sinl(u)*sinl(omega) + cosl(u)*cosl(omega)*cosl(i); this->A[1][2] = -sinl(i)*cosl(omega);
-    this->A[2][0] = sinl(u)*sinl(i);                                this->A[2][1] = cosl(u)*sinl(i) ;                                 this->A[2][2] = cosl(i);
+    this->A(0,0) = cosl(u)*cosl(omega) - sinl(u)*sinl(omega)*cosl(i); this->A(0,1) = -sinl(u)*cosl(omega) - cosl(u)*sinl(omega)*cosl(i); this->A(0,2) = sinl(i)*sinl(omega);
+    this->A(1,0) = cosl(u)*sinl(omega) + sinl(u)*cosl(omega)*cosl(i); this->A(1,1) = -sinl(u)*sinl(omega) + cosl(u)*cosl(omega)*cosl(i); this->A(1,2) = -sinl(i)*cosl(omega);
+    this->A(2,0) = sinl(u)*sinl(i);                                   this->A(2,1) = cosl(u)*sinl(i) ;                                   this->A(2,2) = cosl(i);
 
     cout<<"Matrix A: "<<endl;
-    cout<< "\t" << A[0][0] << "\t" << A[0][1] << "\t" << A[0][2] << endl;
-    cout<< "\t" << A[1][0] << "\t" << A[1][1] << "\t" << A[1][2] << endl;
-    cout<< "\t" << A[2][0] << "\t" << A[2][1] << "\t" << A[2][2] << endl;
+    cout<< "\t" << A(0,0) << "\t" << A(0,1) << "\t" << A(0,2) << endl;
+    cout<< "\t" << A(1,0) << "\t" << A(1,1) << "\t" << A(1,2) << endl;
+    cout<< "\t" << A(2,0) << "\t" << A(2,1) << "\t" << A(2,2) << endl;
 
     this->X_oscul.resize(3);
     X_oscul[0] = orb_height;
@@ -70,8 +70,8 @@ TSatellite::TSatellite(int satellite_number,long double d_u, long double d_omega
     V_oscul[2] = 0.0L;
 
     //пересчет координат вектора начальных условий
-    TVector temp_coordinates(3);
-    TVector temp_velosities(3);
+    vec temp_coordinates(3);
+    vec temp_velosities(3);
     temp_coordinates = this->A*this->X_oscul;
     temp_velosities = this->A*this->V_oscul;
 
@@ -115,7 +115,7 @@ TSatellite::TSatellite(int satellite_number,long double d_u, long double d_omega
 }
 //---------------------------------------------------------------------------
 
-void TSatellite::getRight(const TVector &X, long double t, TVector &Y)
+void TSatellite::getRight(const vec &X, long double t, vec &Y)
 {
     Y.resize(6);
     Y[0] = X[3];
@@ -127,38 +127,5 @@ void TSatellite::getRight(const TVector &X, long double t, TVector &Y)
     Y[5] = -nu*X[2]/powl(ro,3.);
 }
 //---------------------------------------------------------------------------
-long double TSatellite::do_thing(const TVector &X, long double t)
-{
-    generator _generator;
-    long double distance;
-    bool visibility{false};
-    TVector chronometr_vector(3);
-    TVector temp_v(3);
-    temp_v[0] = X[0];
-    temp_v[1] = X[1];
-    temp_v[2] = X[2];
-    //доворачиваем Землю
-    //long double temp_lon{ch_lon};
-    ch_lon = W*(t - t0);
-    //cout<<ch_lon<<endl;
-    //перевод координат радиус вектора к часам на повехрности в декартову систему
-    chronometr_vector[0] = Re*cosl(ch_lat)*cosl(ch_lon);
-    chronometr_vector[1] = Re*cosl(ch_lat)*sinl(ch_lon);
-    chronometr_vector[2] = Re*sinl(ch_lat);
-    long double alfa = acosl(temp_v*chronometr_vector/(temp_v.length()*chronometr_vector.length()));
-    //cout<<"ugol: "<<alfa*180.0L/M_PI<<" lon chronom: "<<ch_lon*180.0L/M_PI<<" time: "<<t - t0<<endl;
-    if (alfa < M_PI/3.0L) visibility = true; else visibility = false;
-    if (visibility == true)
-    {//рассчет расстояния
-        //cout<<_generator.white_noise_generator()<<endl;
-        distance = sqrtl(powl((X[0] - chronometr_vector[0]), 2.0L) +
-                powl((X[1] - chronometr_vector[1]),2.0L) +
-                powl((X[2] - chronometr_vector[2]),2.0L)) + (2.0L+0.01L*t)*1.1L + _generator.white_noise_generator(0.0L, 10.0L);
-    }
-    else
-    {
-        distance = 0.0L;
-    }
-    return distance;
-}
+
 
