@@ -15,7 +15,7 @@ protected:
     long double light_speed{299792458.0L/*1.0L*/}, betta_0{0.0L}, betta_1{0.0L};
     long double measurement_period{0.0L};
     int measure_number{0};
-    long double eps{1e-4};
+    long double eps{1e-3};
     long double delta{1e-10};
     long double m{0.0L}, d{0.0L};
 public:

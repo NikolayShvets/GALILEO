@@ -13,10 +13,10 @@
 using namespace std;
 using namespace arma;
 
-void calcModel(TModel* model, /*Consumer* chronometr,*/ int i);
-
+void calcModel(TModel* model, int i);
 int main()
 {
+    std::ofstream SKO("3_SKO.txt");
     std::ofstream init_distances_file("init_dist.txt");
     std::ofstream true_distances_file("true_dist.txt");
     std::ofstream der_file("der.txt");
@@ -52,7 +52,8 @@ int main()
 
     //блочная матрица результатов интегрирования каждого спутника
     vector<mat> finish_modeling;
-
+    //матрица К (Ht*!D*H)^(-1)
+    mat K;
     //создаем 27 объектов "спутник", каждый из которых является моделью
     TModel* model[satelliteNum];
 
@@ -93,12 +94,6 @@ int main()
     //с шагом 1с реальные дальности всех спутников с ошибкой, с проверкой на видимость
 
     chronometr->navigation(finish_modeling, true);
-  //  chronometr->distances.clear();
-  /*  for (int i = 0; i <chronometr->init_distances.n_rows; ++i)
-    {
-        init_distances_file<<std::fixed;
-        init_distances_file<<chronometr->init_distances(i,2)<<std::endl;
-    }*/
     init_distances_file << chronometr->init_distances << std::endl; init_distances_file.flush();
 
     //инициализируем вектор поправок delta_x
@@ -108,11 +103,10 @@ int main()
 
     //инициализируем вектор ну(оцениваемые параметры) на 0 шаг мнк (забиваем нулями)
     chronometr->measure_vector.resize(5);
-    double deltas_arr[] = {1e-2, 1e-2, 6391000.0L, 1e-3, 1e-9};
+//    double deltas_arr[] = {1e-2, 1e-2, 6391000.0L, 1e-3, 1e-9};
+    double deltas_arr[] = {0.0L, 0.0L, 6391000.0L, 1e-2, 1e-3};
     for(int i = 0; i < chronometr->measure_vector.n_rows; ++i)
     {
-        //if(i==2)
-        //    chronometr->measure_vector[i] = chronometr->Re;
         chronometr->measure_vector[i] = deltas_arr[i];
     }
 
@@ -136,11 +130,7 @@ int main()
         //с шагом 150с расчетные дальности c ошибкой всех спутников в области видимости
 
         chronometr->navigation(finish_modeling, false);
-        /*for (int i = 0; i <chronometr->true_distances.n_rows; ++i)
-        {
-            true_distances_file<<std::fixed;
-            true_distances_file<<chronometr->true_distances(i,2)<<std::endl;
-        }*/
+
         true_distances_file << chronometr->true_distances << std::endl; true_distances_file.flush();
 
         for (int i = 0; i <chronometr->derivatives.n_rows; ++i)
@@ -174,14 +164,28 @@ int main()
             }
             D_file<<std::endl;
         }
-        //вычисляем поправки к вектору начальных условий (p,l,h,b0,b1)T; delta_x = (Ht*!D*H)^(-1)*Ht*D^(-1)*delta_y
-       // TMatrix temp_test(5,5),test(5,5), _test(5,5); //вспомогательная матрица
-        //(Ht*!D*H)^(-1)
 
         std::cout << (chronometr->derivatives.t()*chronometr->D.i()*chronometr->derivatives).i() << std::endl;
+        //вычисляем матрицу К (Ht*!D*H)^(-1)
+        K = (chronometr->derivatives.t()*chronometr->D.i()*chronometr->derivatives).i();
+        //вычисляем поправки к вектору начальных условий (p,l,h,b0,b1)T; delta_x = (Ht*!D*H)^(-1)*Ht*D^(-1)*delta_y
         chronometr->delta_x = (chronometr->derivatives.t()*chronometr->D.i()*chronometr->derivatives).i()*chronometr->derivatives.t()*chronometr->D.i()*chronometr->delta_y;
+        for (int i = 0; i < K.n_rows; ++i)
+        {
+            if( abs(chronometr->delta_x[i]) <  sqrtl(K(i,i))*3.0L )
+            {
+                std::cout<<abs(chronometr->delta_x[i])<<" < "<<sqrtl(K(i,i))*3.0L<<"?"<<" true"<<std::endl;
+            }
+            else
+            {
+                std::cout<<abs(chronometr->delta_x[i])<<" < "<<sqrtl(K(i,i))*3.0L<<"?"<<" false"<<std::endl;
+            }
+            SKO<<std::setprecision(20);
+            SKO<<sqrtl(K(i,i))*3.0L<<" ";
+        }
+        SKO<<std::endl;
+        std::cout<<std::endl;
 
-        std::cout<<std::fixed;
         std::cout<<"delta_x: "<<std::endl;
         std::cout<<chronometr->delta_x<<std::endl;
         std::cout<<chronometr->delta_x.n_rows<<"x"<<"1"<<std::endl;
@@ -190,12 +194,14 @@ int main()
         std::cout<<"measure_vector: "<<std::endl;
         std::cout<<chronometr->measure_vector<<std::endl;
 
+        mnk_file<<std::setprecision(17);
         mnk_file<<std::fixed;
         for(int i = 0; i < chronometr->measure_vector.n_rows; ++i)
             mnk_file<<chronometr->measure_vector[i]<<" ";
         mnk_file<<std::endl;
 
         deltas<<std::fixed;
+        deltas<<std::setprecision(20);
         for(int i = 0; i < chronometr->delta_x.n_rows; ++i)
                 deltas<<chronometr->delta_x[i]<<" ";
         deltas<<std::endl;

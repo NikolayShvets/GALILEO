@@ -22,14 +22,6 @@ void Consumer::get_derivatives(vec X_navigation_spacecraft, vec consumer_AES, lo
 {
     //составляем матрицу H(кол-во_измер Х кол-во_оцен_парам), матрицу D (кол-во_измер Х кол-во_измер)
     // H - матрица частных производных от модели измерений в каждый момент времени
-    //derivatives.resize(measure_number, 5);
-    /*derivatives(measure_number-1,0) = (measure_vector[2]*(sinl(measure_vector[0])*(X_navigation_spacecraft[0]*cosl(curr_lon) + X_navigation_spacecraft[1]*sinl(measure_vector[2])-X_navigation_spacecraft[2]*cosl(measure_vector[0]))))/norm(consumer_AES);
-
-    derivatives(measure_number-1,1) = (-1)*(measure_vector[2]*cosl(measure_vector[0])*(X_navigation_spacecraft[1]*cosl(curr_lon)-X_navigation_spacecraft[0]*sinl(curr_lon)))/norm(consumer_AES);
-
-    derivatives(measure_number-1,2) = (measure_vector[2]-X_navigation_spacecraft[0]*cosl(curr_lon)*cosl(measure_vector[0])-X_navigation_spacecraft[1]*sinl(curr_lon)*cosl(measure_vector[0])-X_navigation_spacecraft[2]*sinl(measure_vector[0]))/norm(consumer_AES);*/
-
-
 
     derivatives(measure_number-1,0) = (measure_vector[2]*(sinl(measure_vector[0])*(X_navigation_spacecraft[0]*cosl(curr_lon) + X_navigation_spacecraft[1]*sinl(curr_lon))-X_navigation_spacecraft[2]*cosl(measure_vector[0])))/
             (sqrtl(powl((X_navigation_spacecraft[0] - measure_vector[2]*cosl(curr_lon)*cosl(measure_vector[0])), 2.0L) +
@@ -93,12 +85,8 @@ void Consumer::navigation(std::vector<mat> finish_modeling, bool w_err)
             {
                 ++measure_number;
                 temp_time = finish_modeling[k](i,0);
-                /*distance = sqrtl(powl((temp_v[0] - measure_vector[2]*cosl(measure_vector[0])*cosl(current_longtitude)), 2.0L) +
-                            powl((temp_v[1] - measure_vector[2]*cosl(measure_vector[0])*sinl(current_longtitude)),2.0L) +
-                            powl((temp_v[2] -  measure_vector[2]*sinl(measure_vector[0])),2.0L)) +
-                                (betta_0+betta_1*temp_time)*light_speed+
-                            _generator.white_noise_generator(m, d);*/
-                distance = norm(consumer_AES) + (betta_0+betta_1*temp_time) * light_speed +_generator.white_noise_generator(m, d);
+
+                distance = norm(consumer_AES) + (measure_vector[3]+measure_vector[4]*temp_time) * light_speed +_generator.white_noise_generator(m, d);
 
                 init_distances.resize(measure_number, 3);
                 init_distances(measure_number - 1,0) = temp_time;
@@ -109,9 +97,9 @@ void Consumer::navigation(std::vector<mat> finish_modeling, bool w_err)
             if ( (!w_err)&&(count < measure_number)&&(init_distances(count, 0) == finish_modeling[k](i,0))&&(k == init_distances(count, 1)) )
             {
                 ++count;
-                //++measure_number;
                 temp_time = finish_modeling[k](i,0);
-                distance = norm(consumer_AES) + (betta_0+betta_1*temp_time)*light_speed;
+
+                distance = norm(consumer_AES) + (measure_vector[3]+measure_vector[4]*temp_time)*light_speed;
 
                 true_distances(count - 1,0) = temp_time;
                 true_distances(count - 1,1) = k;
